@@ -1,0 +1,151 @@
+#!/usr/bin/env python
+# Copyright (c) 2009-2011, Michael Gorven, Stefano Rivera, Max Rabkin
+# Released under terms of the MIT/X/Expat Licence. See COPYING for details.
+
+from locale import getpreferredencoding
+import logging
+from optparse import OptionParser
+from os import getenv
+from os.path import exists
+import sys
+
+try:
+    import readline
+    if exists('.history'):
+        readline.read_history_file('.history')
+except ImportError:
+    pass
+
+sys.path.insert(0, '.')
+
+import ibid
+import ibid.core
+from ibid.config import FileConfig
+from ibid.db.models import Identity
+from ibid.event import Event
+
+parser = OptionParser(usage="""%prog [options...] [plugins...]
+plugins is the list of plugins to load.
+A plugin name followed by a - will be disabled rather than loaded.""")
+parser.add_option('-o', '--only', dest='load_base', action='store_false',
+        default=True,
+        help='Only load the specified plugins, not the common base plugins')
+parser.add_option('-c', '--configured', dest='load_configured',
+        action='store_true', default=False,
+        help='Load all all configured plugins')
+parser.add_option('-p', '--public', action='store_true', default=False,
+        help="Make testchan public, it's private by default")
+parser.add_option('-v', '--verbose', action='store_true', default=False,
+        help="Output final event objects")
+
+(options, args) = parser.parse_args()
+
+if options.load_configured and not options.load_base:
+    parser.error("Incompatible combination: --configured and --only")
+
+# Setup Ibid core:
+class FakeAuth(object):
+    def authorise(self, event, permission):
+        return True
+
+    def authenticate(self, event, credential=None):
+        return True
+
+    def drop_caches(self):
+        return
+
+ibid.auth = FakeAuth()
+logging.basicConfig(level=logging.DEBUG)
+ibid.config = FileConfig("ibid.ini")
+ibid.config.merge(FileConfig("local.ini"))
+ibid.reload_reloader()
+ibid.reloader.reload_databases()
+ibid.reloader.reload_dispatcher()
+
+class TestSource(object):
+    type = 'test'
+    permissions = []
+    supports = ('action', 'multiline', 'notice')
+
+    def setup(self):
+        pass
+
+    def logging_name(self, name):
+        return name
+
+    def truncation_point(self, response, event=None):
+        return None
+
+    def url(self):
+        return None
+
+ibid.sources[u'test_source'] = TestSource()
+
+load = [plugin for plugin in args if not plugin.endswith("-")]
+noload = [plugin[:-1] for plugin in args if plugin.endswith("-")]
+
+if options.load_base:
+    load.extend(("admin", "core", "help", "test"))
+
+load.extend(ibid.config.plugins.get('load', []))
+noload.extend(ibid.config.plugins.get('noload', []))
+autoload = options.load_configured
+
+ibid.reloader.load_processors(load, noload, autoload)
+
+username = unicode(getenv('USER'))
+if not username:
+    username = u'tester'
+
+session = ibid.databases.ibid()
+
+identity = session.query(Identity).filter_by(identity=username, source=u'test_source').first()
+if not identity:
+    identity = Identity(u'test_source',username)
+    session.add(identity)
+    session.commit()
+    identity = session.query(Identity).filter_by(identity=username).first()
+identity_id = identity.id
+
+session.close()
+
+encoding = getpreferredencoding()
+
+log = logging.getLogger('scripts.ibid-plugin')
+
+while True:
+    event = Event(u'test_source', u'message')
+    event.sender['id'] = event.sender['connection'] = event.sender['nick'] = username
+    event.identity = identity_id
+    event.account =  None
+    event.addressed = not options.public
+    event.public = options.public
+    event.channel = u"testchan"
+
+    try:
+        event.message = unicode(raw_input('Query: '), encoding)
+    except (KeyboardInterrupt, EOFError):
+        break
+
+    ibid.core.process(event, log)
+
+    if options.verbose:
+        print "Event: %s" % repr(event)
+
+    for response in event.responses:
+        if isinstance(response, basestring):
+            print 'Response: %s' % response
+        elif response.get('action', False):
+            print 'Action: %s' % response.get('reply')
+        elif response.get('notice', False):
+            print 'Notice: %s' % response.get('reply')
+        else:
+            print 'Response: %s' % response.get('reply')
+
+    event.session.close()
+
+if readline:
+    readline.write_history_file('.history')
+print "\nExiting"
+
+# vi: set et sta sw=4 ts=4:

@@ -1,0 +1,109 @@
+#!/usr/bin/env python
+# Copyright (c) 2009-2011, Stefano Rivera
+# Released under terms of the MIT/X/Expat Licence. See COPYING for details.
+
+import gzip
+import optparse
+import sys
+
+import dateutil
+try:
+    import matplotlib.pyplot as pyplot
+    from matplotlib.dates import date2num
+    import numpy
+except ImportError:
+    print >> sys.stderr, ('This script requires matplotlib '
+                          '(python-matplotlib on Debian/Ubuntu).\n'
+                          'Please install it and try again.')
+    sys.exit(1)
+
+from ibid.compat import json
+
+parser = optparse.OptionParser(usage="""%prog [arguments] logfile types...
+logfile is an object log file (possibly gzipped)
+types are a list of object types to graph""")
+parser.add_option('-o', '--output', dest='output', metavar='FILE',
+        help='Output to filename rather than interactive')
+parser.add_option('-e', '--examine', dest='examine', metavar='TIME',
+        default=None, help='Instead of graphing, find what changed at TIME')
+parser.add_option('-d', '--dpi', dest='dpi',
+        help='Output DPI')
+
+(options, args) = parser.parse_args()
+
+if len(args) < 1:
+    sys.stderr.write("Log file required\n")
+    sys.exit(2)
+if options.examine is None and len(args) < 2:
+    sys.stderr.write("At least one type required\n")
+    sys.exit(2)
+
+f = args[0].endswith('.gz') and gzip.GzipFile(args[0], 'r') or file(args[0], 'r')
+header = f.readline().strip()
+
+if not header.startswith('Ibid Object Log v1: '):
+    sys.stderr.write("Incorrect file format\n")
+    sys.exit(1)
+
+botname = header.split(':', 1)[1].strip()
+
+if options.examine is not None:
+    options.examine=dateutil.parser.parse(options.examine)
+
+types = args[1:]
+
+times = []
+data = []
+
+for line in f:
+    timestamp, stats = line.split(' ', 1)
+
+    timestamp = dateutil.parser.parse(timestamp)
+    times.append(date2num(timestamp))
+
+    stats = json.loads(stats)
+    if options.examine is None:
+        data.append([stats.get(type, 0) for type in types])
+    else:
+        if timestamp < options.examine:
+            data = [stats]
+        else:
+            data.append(stats)
+            break
+
+if options.examine is None:
+    times = numpy.array(times, dtype=float)
+    data = numpy.array(data, dtype=int)
+
+    fig = pyplot.figure()
+    ax = fig.add_subplot(111)
+    ax.set_xlabel('time (s)')
+    ax.set_ylabel('Objects (k)', color='b')
+    ax.grid(True)
+
+    ax.set_color_cycle(list('brgycmk'))
+
+    for i, type in enumerate(types):
+        ax.plot_date(times, data[:,i], '-', label=type)
+
+    pyplot.legend(loc='best')
+    pyplot.title(botname + ' Object Stats')
+
+    fig.autofmt_xdate()
+
+    if options.output:
+        pyplot.savefig(options.output, dpi=options.dpi)
+    else:
+        pyplot.show()
+
+else:
+    delta = []
+    for key, value in data[1].iteritems():
+        if key in data[0]:
+            delta.append((value - data[0][key], key))
+
+    delta.sort(reverse=True)
+    for item in delta:
+        print '%i\t%s' % item
+
+# vi: set et sta sw=4 ts=4:

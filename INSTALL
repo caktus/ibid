@@ -1,0 +1,57 @@
+Installation Instructions for Debian/Ubuntu Systems:
+
+Supported releases:
+* Ubuntu hardy (with hardy-backports)
+* Ubuntu jaunty
+* Ubuntu karmic
+* Ubuntu lucid (in the repositories)
+* Ubuntu maverick (in the repositories)
+* Debian lenny
+* Debian squeeze (in the repositories)
+* but it should work on any unixy system where you can get the required Python
+  modules.
+
+If Ibid isn't available for your version of Ubuntu, add the PPA to your APT sources:
+# echo deb http://ppa.launchpad.net/ibid-core/ppa/ubuntu `lsb_release -cs` main > /etc/apt/sources.list.d/ibid.list
+# apt-key adv --recv-keys --keyserver keyserver.ubuntu.com c2d0f8531bba37930c0d85e3d59f9e8dfd1c44ba
+# aptitude update
+
+Debian: Add the Ibid repo to your APT sources:
+# echo deb http://ibid.omnia.za.net/debian lenny-backports main > /etc/apt/sources.list.d/ibid.list
+# apt-key adv --recv-keys --keyserver subkeys.pgp.net --recv-keys 5EB879CE
+# aptitude update
+
+Install required modules:
+# aptitude install python-beautifulsoup \
+	python-dateutil python-dnspython python-feedparser \
+	python-html2text python-html5lib python-imdbpy \
+	python-jinja2 python-silc python-setuptools \
+	python-simplejson python-soappy python-sqlalchemy \
+	python-twisted python-wokkel
+
+Install into a virtualenv or your system:
+$ ./setup.py install --no-dependencies
+
+*Or* to get setup.py to find the dependencies for you:
+$ ./setup.py install
+
+Set up your bot:
+$ mkdir bothome
+$ cd bothome
+$ ibid-setup
+
+Run your bot:
+$ cd bothome
+$ twistd -n ibid
+
+Other things we recommend:
+* Install a dictd on localhost for the dict plugin (debian/ubuntu package "dictd")
+  Also, the python dict client library ("python-dictclient")
+* Install GNU units for the unit conversion plugin ("units")
+* Install bc for "bc" calculations ("bc")
+* Install ipcalc ("ipcalc")
+* Install tracepath ("iputils-tracepath")
+* Install fortune ("fortunes-min")
+* Install man ("man-db")
+* Install aalib and caca for ASCII Art Image rendering ("python-aalib", "caca-utils")
+* Install pyfiglet for ASCII Art text ("python-pyfiglet")
