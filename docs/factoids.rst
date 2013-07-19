@@ -3,7 +3,7 @@ Factoids
 
 .. highlight:: irc
 
-Factoids are one of the most important Ibid plugins.
+Factoids is one of the most important Ibid plugins.
 They are what give a bot most of its personality, and after a few years
 on IRC, it can expect to pick up a few thousand of them from its users.
 

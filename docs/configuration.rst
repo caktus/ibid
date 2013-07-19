@@ -127,10 +127,10 @@ Sources
 ^^^^^^^
 
 Sources are the way that Ibid connects to users.
-Every IRC/SILC/DC server is it's own source as are connections to other
+Every IRC/SILC/DC server is its own source as are connections to other
 services.
 
-The configuration parameters that applies to all sources are:
+The configuration parameters that apply to all sources are:
 
 .. describe:: disabled:
 

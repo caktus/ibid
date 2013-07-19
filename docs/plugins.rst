@@ -9,6 +9,8 @@ and plugin management.
 Then there are feature plugins, such as factoids, RSS/Atom feeds,
 dictionary lookup, etc.
 
+See the tutorial for how to write one.
+
 .. toctree::
 
    factoids
