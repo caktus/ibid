@@ -35,12 +35,12 @@ if argv[1:] == ['install', '--no-dependencies']:
 
 setup(
     name='Ibid',
-    version='0.2.0dev',
+    version='0.2.0dev-caktus',
     description='Multi-protocol general purpose chat bot',
-    url='http://ibid.omnia.za.net/',
+    url='https://github.com/caktus/ibid',
     keywords='chat bot irc jabber twisted messaging',
-    author='Ibid Developers',
-    author_email='ibid@omnia.za.net',
+    author='Ibid Developers and Caktus Group',
+    author_email='dpoirier@caktusgroup.com',
     license='MIT',
     py_modules=['ibid'],
     install_requires=install_requires,
