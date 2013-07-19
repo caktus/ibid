@@ -9,7 +9,7 @@ from urllib2 import URLError
 from urlparse import urljoin
 
 import feedparser
-from html2text import html2text_file
+from html2text import html2text
 
 from ibid.config import IntOption, FloatOption
 from ibid.db import IbidUnicode, IbidUnicodeText, Integer, DateTime, \
@@ -264,22 +264,22 @@ class Retrieve(Processor):
         for article in articles:
             if full:
                 if 'summary' in article:
-                    summary = html2text_file(article.summary, None)
+                    summary = html2text(article.summary, None)
                 else:
                     if article.content[0].type in \
                             ('application/xhtml+xml', 'text/html'):
-                        summary = html2text_file(article.content[0].value, None)
+                        summary = html2text(article.content[0].value, None)
                     else:
                         summary = article.content[0].value
 
                 entries.append(u'%(number)s: "%(title)s"%(link)s : %(summary)s' % {
                     'number': articles.index(article) + 1,
-                    'title': html2text_file(article.title, None).strip(),
+                    'title': html2text(article.title, None).strip(),
                     'link': get_link(article),
                     'summary': summary,
                 })
             else:
-                entries.append(u'%s: "%s"' % (feed.entries.index(article) + 1, html2text_file(article.title, None).strip()))
+                entries.append(u'%s: "%s"' % (feed.entries.index(article) + 1, html2text(article.title, None).strip()))
         event.addresponse(u', '.join(entries))
 
     @match(r'^article\s+(?:(\d+)|/(.+?)/)\s+from\s+(.+?)$')
@@ -314,16 +314,16 @@ class Retrieve(Processor):
                 return
 
         if 'summary' in article:
-            summary = html2text_file(article.summary, None)
+            summary = html2text(article.summary, None)
         else:
             if article.content[0].type in \
                     ('application/xhtml+xml', 'text/html'):
-                summary = html2text_file(article.content[0].value, None)
+                summary = html2text(article.content[0].value, None)
             else:
                 summary = article.content[0].value
 
         event.addresponse(u'"%(title)s"%(link)s : %(summary)s', {
-            'title': html2text_file(article.title, None).strip(),
+            'title': html2text(article.title, None).strip(),
             'link': get_link(article),
             'summary': summary,
         })
