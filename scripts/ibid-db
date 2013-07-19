@@ -86,8 +86,7 @@ if options.upgrade is not None:
     db = DatabaseManager(check_schema_versions=False)['ibid']
     if not db.bind.has_table('schema'):
         print >> stderr, ("Database doesn't appear to contain an Ibid. "
-                'Run ibid-setup.')
-        exit(1)
+                'Setting up')
     upgrade_schemas(db)
 
 elif options.export is not None:
